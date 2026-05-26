@@ -56,6 +56,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -246,10 +247,13 @@ def build_features_up_to(ticker: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _compute_ic(y_pred: np.ndarray, y_true: np.ndarray) -> float:
-    """Pearson IC. Returns 0 if less than 20 samples."""
+    """Spearman rank IC (Grinold-Kahn). Returns 0 if less than 20 samples.
+    Fix 2026-05-27: was Pearson (np.corrcoef), now Spearman (scipy.stats.spearmanr).
+    Spearman is robust to fat-tailed return distributions.
+    """
     if len(y_pred) < 20:
         return 0.0
-    return float(np.corrcoef(y_pred, y_true)[0, 1])
+    return float(spearmanr(y_pred, y_true).correlation)
 
 
 def train_and_get_ic(ticker: str,

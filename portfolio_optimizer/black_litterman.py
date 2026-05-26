@@ -420,9 +420,10 @@ def run_black_litterman(bundle: DataBundle,
                 pi.min() * 100, pi.max() * 100)
 
     # Step 2: XGBoost views (Grinold-Kahn calibrated)
-    logger.info("  Loading XGBoost views (IC threshold = %.2f)...", MIN_IC)
+    # Fix 2026-05-27: build_views_from_xgboost now receives sigma_dcc (same as
+    # equilibrium computation). Was sigma_lw — mixing matrices violates BL spec.
     P, Q, Omega, active_views = build_views_from_xgboost(
-        tickers, pi, bundle.sigma_lw.values)
+        tickers, pi, bundle.sigma_dcc.values)
     logger.info("  Active views: %d / %d stocks", len(active_views), len(tickers))
 
     # Step 3: Posterior
@@ -447,7 +448,11 @@ def run_black_litterman(bundle: DataBundle,
     #   This is the closed-form BL solution — identical to what K7 backtester
     #   uses and what He & Litterman (1999) derive as the optimal BL portfolio.
     w_market_arr = bundle.w_market.values
-    sigma_for_tilt = bundle.sigma_lw.values   # LW for tilt (more stable than DCC)
+    # Fix 2026-05-27: sigma_for_tilt now = sigma_dcc (same as Π computation).
+    # Was sigma_lw — using two different covariance matrices violates the
+    # canonical BL formula w = w_mkt + (δΣ)⁻¹(μ_BL - Π) which requires one Σ.
+    # Mixed Σ matrices caused HDFCBANK/RELIANCE/BAJFINANCE to pile at 20% cap.
+    sigma_for_tilt = bundle.sigma_dcc.values   # DCC — same as equilibrium Π
     tilt  = np.linalg.solve(DELTA * sigma_for_tilt, mu_bl_arr - pi)
     w_raw = w_market_arr + tilt
     w_raw = np.clip(w_raw, 0.0, W_MAX)        # no shorts, respect 20% cap

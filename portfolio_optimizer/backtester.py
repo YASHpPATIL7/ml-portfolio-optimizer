@@ -485,9 +485,11 @@ def run_backtest(returns_df: pd.DataFrame,
             for k in strategies:
                 w[k] = prev_weights[k]
 
-        # Compute turnover
+        # Compute turnover — Fix 2026-05-27: divide by 2 (industry standard).
+        # sum(|w_new - w_old|) double-counts: every buy has a matching sell.
+        # Correct formula: sum(|Δw|) / 2. Was reporting 2× the true cost.
         for k in strategies:
-            turnover = float(np.abs(w[k] - prev_weights[k]).sum())
+            turnover = float(np.abs(w[k] - prev_weights[k]).sum()) / 2.0
             strategies[k].turnover_history.append(turnover)
             strategies[k].weights_history.append(w[k].copy())
             prev_weights[k] = w[k].copy()
