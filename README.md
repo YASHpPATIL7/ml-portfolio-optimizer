@@ -1,8 +1,8 @@
-# Kuber — ML Portfolio Optimizer
+# Portfolio Optimizer — ML Allocation Engine
 
-> *"Vajra asks: How much can I lose? Alpha-Core asks: What should I trade? Kuber asks: How much of each, given my constraints?"*
+> *"Indian Risk Engine asks: How much can I lose? Alpha-Core asks: What should I trade? Portfolio Optimizer asks: How much of each, given my constraints?"*
 
-**Kuber** is an institutional-grade portfolio construction engine that integrates dynamic risk modeling, machine learning signals, and macro policy overlays into a unified Black-Litterman allocation framework.
+**Portfolio Optimizer** is an institutional-grade portfolio construction engine that integrates dynamic risk modeling, machine learning signals, and macro policy overlays into a unified Black-Litterman allocation framework.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-ff4b4b?logo=streamlit)](https://streamlit.io)
@@ -13,24 +13,24 @@
 ## The 3-Project Pipeline
 
 ```
-VAJRA (Indian Risk Engine)
+INDIAN RISK ENGINE (indian-risk-engine)
   └── GARCH conditional volatility → DCC dynamic covariance matrix (Σ)
-          ↓ feeds Kuber as covariance input
+          ↓ feeds Portfolio Optimizer as covariance input
 
 ALPHA-CORE (Signal Engine)
   └── Fama-French decomposition → HMM regime detection
       → XGBoost residual prediction → IC-ranked signals per stock
-          ↓ feeds Kuber as Black-Litterman view vector (Q)
+          ↓ feeds Portfolio Optimizer as Black-Litterman view vector (Q)
 
-KUBER (Allocation Engine)
-  └── Takes Σ from Vajra + Q from Alpha-Core
+PORTFOLIO OPTIMIZER (Allocation Engine)
+  └── Takes Σ from Indian Risk Engine + Q from Alpha-Core
       → equilibrium prior Π = δΣw
       → Bayesian BL update: μ_BL = f(Π, Q, Ω)
-      → MVO on posterior → optimal weights
+      → canonical analytical tilt → optimal weights
       → Walk-forward backtest → PM morning report
 ```
 
-**Interview line:** *"My three projects are not independent — they're a pipeline. Vajra's DCC covariance feeds Kuber. Alpha-Core's XGBoost predictions become Kuber's Black-Litterman views. One command runs the full stack."*
+**Interview line:** *"My three projects are not independent — they're a pipeline. The Indian Risk Engine's DCC covariance feeds the Portfolio Optimizer. Alpha-Core's XGBoost predictions become its Black-Litterman views. One command runs the full stack."*
 
 ---
 
@@ -59,13 +59,13 @@ KUBER (Allocation Engine)
 | MVO Max Sharpe | 9.91% | 14.11% | 0.242 | -20.1% | **39.2%** |
 | MVO Min Vol | 8.12% | 11.91% | 0.136 | -25.0% | 15.4% |
 | HRP | 9.35% | 12.29% | **0.232** | -19.4% | 14.3% |
-| **BL-Combined** | 8.41% | 17.57% | 0.109 | -20.2% | 14.4% |
+| **BL-Combined** | 8.66% | 13.15% | 0.165 | -19.2% | **6.9%** |
 
 **Key findings:**
 - **HRP = best risk-adjusted** (0.232 Sharpe) with only 14.3% turnover vs MVO's 39.2%
 - **MVO turnover is 2.7× HRP** — confirms sensitivity to estimation error
 - **MVO Min Vol worst MaxDD** (-25%) despite lowest vol — Σ estimation error inverted
-- **BL Sharpe positive** (0.109) with time-gated views — fully defensible out-of-sample
+- **BL lowest turnover** (6.9%) — blending mechanics phase-in correctly
 
 > ⚠️ BL uses static XGBoost views (May 2026 model) gated to `valid_from: 2026-05-01`. For most of 2021–2025, BL runs on GatiShakti macro views only, which is the production-correct design. In live deployment, XGBoost retrains monthly.
 
@@ -103,9 +103,6 @@ p_k = |IC_k| / MAX_IC         # confidence ∈ [0,1]
 Quarterly government capex data → sector views → combined with ML views in one BL update.
 
 ```python
-# Multi-quarter YAML — each quarter has a valid_from date
-# Backtester automatically picks the correct quarter at each rebalance date
-
 Q1_FY22 (valid_from: 2021-04-01) — Post-COVID recovery: IT+80bps, Financials+50bps
 Q1_FY23 (valid_from: 2022-04-01) — Rate hike cycle: Financials-60bps, Energy+80bps
 Q1_FY24 (valid_from: 2023-04-01) — IT slowdown: IT-40bps, NBFC+80bps
@@ -130,13 +127,13 @@ view_bps = base_alpha × tanh(sentiment_score)
 # Activate Alpha-Core venv (contains all dependencies)
 source ../alpha-core/venv/bin/activate
 
-# Install additional deps
-pip install streamlit pyyaml
-
 # Run individual modules
 PYTHONPATH=. python3 portfolio_optimizer/black_litterman.py   # K4+K5
 PYTHONPATH=. python3 portfolio_optimizer/gatishakti_views.py  # K6
 PYTHONPATH=. python3 portfolio_optimizer/backtester.py         # K7
+
+# Full pipeline (all 3 projects connected)
+PYTHONPATH=. python3 main.py
 
 # Launch dashboard
 streamlit run dashboard/app.py
@@ -144,8 +141,8 @@ streamlit run dashboard/app.py
 
 ### Data dependencies
 ```
-data/vajra_returns.csv          ← from Vajra Indian Risk Engine
-data/vajra_dcc_cov.pkl          ← Vajra DCC covariance cube
+data/vajra_returns.csv              ← from Indian Risk Engine
+data/vajra_dcc_cov.pkl              ← DCC covariance cube
 ../alpha-core/data/xgb_predictions.csv  ← Alpha-Core XGBoost output
 portfolio_optimizer/gatishakti_views.yaml  ← quarterly macro config
 ```
@@ -155,44 +152,44 @@ portfolio_optimizer/gatishakti_views.yaml  ← quarterly macro config
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      KUBER                               │
-│                                                         │
-│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐   │
-│  │   K1     │   │   K2     │   │      K3          │   │
-│  │ Data     │──▶│ Markowitz│   │  HRP             │   │
-│  │ Loader   │   │ MVO      │   │  (no Σ⁻¹)        │   │
-│  └────┬─────┘   └──────────┘   └──────────────────┘   │
-│       │                                                  │
-│       ▼  Σ_dcc (from Vajra)  +  IC signals (Alpha-Core) │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  K4+K5: Black-Litterman                          │   │
-│  │  Π = δΣw  →  BL posterior  →  MVO on μ_BL       │   │
-│  └──────────────┬───────────────────────────────────┘   │
-│                 │                                        │
-│  ┌──────────────▼──────────────────────────────────┐   │
-│  │  K6: GatiShakti + FinBERT                        │   │
-│  │  Budget text → sentiment → view_bps → P,Q,Ω      │   │
-│  └──────────────┬───────────────────────────────────┘   │
-│                 │                                        │
-│  ┌──────────────▼──────────────────────────────────┐   │
-│  │  K7: Walk-Forward Backtester                     │   │
-│  │  2021–2026 | Monthly | Time-gated views           │   │
-│  └──────────────┬───────────────────────────────────┘   │
-│                 │                                        │
-│  ┌──────────────▼──────────────────────────────────┐   │
-│  │  K8: Streamlit Dashboard (5 tabs)                │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              PORTFOLIO OPTIMIZER                          │
+│                                                          │
+│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐    │
+│  │   K1     │   │   K2     │   │      K3          │    │
+│  │ Data     │──▶│ Markowitz│   │  HRP             │    │
+│  │ Loader   │   │ MVO      │   │  (no Σ⁻¹)        │    │
+│  └────┬─────┘   └──────────┘   └──────────────────┘    │
+│       │                                                   │
+│       ▼  Σ_dcc (Indian Risk Engine) + IC (Alpha-Core)    │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │  K4+K5: Black-Litterman                          │    │
+│  │  Π = δΣw  →  BL posterior  →  canonical tilt    │    │
+│  └──────────────┬───────────────────────────────────┘    │
+│                 │                                         │
+│  ┌──────────────▼──────────────────────────────────┐    │
+│  │  K6: GatiShakti + FinBERT                        │    │
+│  │  Budget text → sentiment → view_bps → P,Q,Ω      │    │
+│  └──────────────┬───────────────────────────────────┘    │
+│                 │                                         │
+│  ┌──────────────▼──────────────────────────────────┐    │
+│  │  K7: Walk-Forward Backtester                     │    │
+│  │  2021–2026 | Monthly | Time-gated views           │    │
+│  └──────────────┬───────────────────────────────────┘    │
+│                 │                                         │
+│  ┌──────────────▼──────────────────────────────────┐    │
+│  │  K8: Streamlit Dashboard (5 tabs)                │    │
+│  └──────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Interview Narrative
 
-> *"I built three interconnected systems. Vajra is the risk engine — GARCH volatility, DCC dynamic correlations, Monte Carlo VaR. Alpha-Core is the signal engine — Fama-French factor decomposition, HMM regime detection, XGBoost on residuals with SHAP explainability. Kuber is the allocation engine — it takes Vajra's DCC covariance as the input matrix and Alpha-Core's XGBoost predictions as Black-Litterman views.*
+> *"I built three interconnected systems. The Indian Risk Engine handles GARCH volatility, DCC dynamic correlations, and Monte Carlo VaR. Alpha-Core is the signal engine — Fama-French factor decomposition, HMM regime detection, XGBoost on residuals with SHAP explainability. The Portfolio Optimizer takes the Risk Engine's DCC covariance as the input matrix and Alpha-Core's XGBoost predictions as Black-Litterman views.*
 >
-> *Today, with ONGC flagged as LONG_BIAS with IC=0.121, Kuber increases ONGC from its market-cap equilibrium of 3.47% to a posterior return of 5.76% — a 229bps shift. The portfolio weight adjusts accordingly. I also layer in quarterly GatiShakti macro views — Q4 FY26 puts a -100bps view on rate-sensitive banks based on RBI's repo rate pause. Both view sets are combined in one Bayesian update.*
+> *Today, with ONGC flagged as LONG_BIAS with IC=0.121, the optimizer increases ONGC from its market-cap equilibrium of 3.47% to a posterior return of 5.76% — a 229bps shift. I also layer in quarterly GatiShakti macro views — Q4 FY26 puts a -100bps view on rate-sensitive banks based on RBI's repo rate pause. Both view sets are combined in one Bayesian update.*
 >
 > *The walk-forward backtest shows HRP as the most efficient strategy (0.232 Sharpe, 14% turnover) vs MVO's 39% turnover — which is the main reason nobody runs raw MVO in production."*
 
@@ -210,4 +207,4 @@ portfolio_optimizer/gatishakti_views.yaml  ← quarterly macro config
 
 ---
 
-*Part of the Vajra → Alpha-Core → Kuber quantitative pipeline.*
+*Part of the Indian Risk Engine → Alpha-Core → Portfolio Optimizer quantitative pipeline.*

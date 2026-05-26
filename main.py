@@ -2,7 +2,7 @@
 """
 main.py — The Three-Project Pipeline
 =====================================
-Vajra (Risk) → Alpha-Core (Signal) → Kuber (Allocation) → RebalancingAgent
+Indian Risk Engine (Risk) → Alpha-Core (Signal) → Portfolio Optimizer (Allocation) → RebalancingAgent
 
 One command runs the full stack:
     python main.py
@@ -333,8 +333,9 @@ def generate_allocation_report(
 
     banner = "═" * 72
     print(f"\n{banner}")
-    print(f"  KUBER — MORNING ALLOCATION REPORT  |  {today}")
-    print(f"  Vajra → Alpha-Core → Kuber → Agent (One Pipeline)")
+    print(f"  PORTFOLIO OPTIMIZER — MORNING ALLOCATION REPORT  |  {today}")
+
+    print(f"  Indian Risk Engine → Alpha-Core → Portfolio Optimizer → Agent (One Pipeline)")
     print(banner)
 
     # ── Macro Context ──
