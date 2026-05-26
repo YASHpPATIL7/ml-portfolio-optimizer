@@ -1,0 +1,237 @@
+# ============================================================
+# K6 — PM GatiShakti Macro View Config
+# Multi-quarter history — each quarter has its own valid_from date
+#
+# BACKTEST RULE: a view is only applied from its valid_from date.
+# Views from Q4 FY26 cannot be applied in 2021 — they didn't exist.
+#
+# HOW TO ADD NEW QUARTER:
+#   1. Copy the latest quarter block
+#   2. Update valid_from to the budget/announcement date
+#   3. Adjust view_bps based on new capex allocations
+#   4. The backtester automatically picks the latest valid quarter
+# ============================================================
+
+# ── XGBoost view gate ──────────────────────────────────────────────────────
+# XGBoost model was trained on data through this date.
+# Views from this model CANNOT be applied before this date in any backtest.
+xgb_valid_from: "2026-05-01"
+
+# ── GatiShakti quarterly history ──────────────────────────────────────────
+quarters:
+
+  # ── Q1 FY22 (April 2021) — Post-COVID Recovery Budget ──────────────────
+  - quarter: "Q1_FY22"
+    valid_from: "2021-04-01"
+    source: "Union Budget FY22 — recovery-focused capex"
+    total_capex_lakh_cr: 35.0
+    note: "Post-COVID infra push. Digital + Healthcare prioritised."
+    sectors:
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: 80
+        confidence: 0.65
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 100
+        confidence: 0.72
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 30
+        confidence: 0.55
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: 50          # RBI accommodative — positive for banks
+        confidence: 0.60
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 40
+        confidence: 0.55
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: 0
+        confidence: 0.50
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: 60
+        confidence: 0.60
+
+  # ── Q1 FY23 (April 2022) — Capex Ramp + Rate Hike Cycle ────────────────
+  - quarter: "Q1_FY23"
+    valid_from: "2022-04-01"
+    source: "Union Budget FY23 — ₹7.5 lakh cr capex"
+    total_capex_lakh_cr: 75.0
+    note: "RBI started hiking rates. Financials under pressure. Infra boom."
+    sectors:
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: 90
+        confidence: 0.70
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 60
+        confidence: 0.65
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 20
+        confidence: 0.52
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: -60         # RBI rate hike cycle begins — NIM risk
+        confidence: 0.68
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 80          # Oil price spike (Russia-Ukraine)
+        confidence: 0.72
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: -30         # Commodity cost pressure
+        confidence: 0.58
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: -40         # Rate hike impacts NBFC cost of funds
+        confidence: 0.62
+
+  # ── Q1 FY24 (April 2023) — Stabilisation ───────────────────────────────
+  - quarter: "Q1_FY24"
+    valid_from: "2023-04-01"
+    source: "Union Budget FY24 — ₹10 lakh cr capex"
+    total_capex_lakh_cr: 100.0
+    note: "RBI paused. Infra capex acceleration. IT sector slowdown (US recession fears)."
+    sectors:
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: -40         # US tech demand slowdown
+        confidence: 0.68
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 70
+        confidence: 0.68
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 40
+        confidence: 0.60
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: 30          # Pause → stable margins
+        confidence: 0.65
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 60
+        confidence: 0.68
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: 50          # EV transition + SUV demand
+        confidence: 0.62
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: 80          # Consumer credit growth recovery
+        confidence: 0.68
+
+  # ── Q1 FY25 (April 2024) — Election Year + Infra Push ──────────────────
+  - quarter: "Q1_FY25"
+    valid_from: "2024-04-01"
+    source: "Interim Budget FY25 — Election year fiscal"
+    total_capex_lakh_cr: 111.0
+    note: "Election year. Defensive tilt. Healthcare + Consumer get tailwind."
+    sectors:
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: 60
+        confidence: 0.65
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 80
+        confidence: 0.70
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 60          # Rural welfare spend election boost
+        confidence: 0.68
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: -30
+        confidence: 0.62
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 70
+        confidence: 0.68
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: 40
+        confidence: 0.60
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: 70
+        confidence: 0.67
+
+  # ── Q3 FY26 (October 2025) ─────────────────────────────────────────────
+  - quarter: "Q3_FY26"
+    valid_from: "2025-10-15"
+    source: "GatiShakti portal Q3 FY26 sector allocation update"
+    total_capex_lakh_cr: 111.0
+    note: "Digital infra dominates. RBI repo paused at 6.25%."
+    sectors:
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: 100
+        confidence: 0.73
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 70
+        confidence: 0.68
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 40
+        confidence: 0.58
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: -80
+        confidence: 0.70
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 130
+        confidence: 0.78
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: 0
+        confidence: 0.50
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: 55
+        confidence: 0.63
+
+  # ── Q4 FY26 (January 2026) — Latest ────────────────────────────────────
+  - quarter: "Q4_FY26"
+    valid_from: "2026-01-31"
+    source: "Union Budget FY26 + GatiShakti portal"
+    total_capex_lakh_cr: 111.0
+    note: "Energy transition + digital layer dominate. Financials under NIM pressure."
+    sectors:
+      - name: "Energy & Upstream Oil"
+        tickers: ["ONGC", "RELIANCE"]
+        view_bps: 150
+        confidence: 0.80
+      - name: "Digital & IT Services"
+        tickers: ["INFY", "TCS", "WIPRO"]
+        view_bps: 120
+        confidence: 0.75
+      - name: "Healthcare & Pharma"
+        tickers: ["DRREDDY", "SUNPHARMA"]
+        view_bps: 80
+        confidence: 0.70
+      - name: "Consumer Defensive"
+        tickers: ["HINDUNILVR", "ITC"]
+        view_bps: 50
+        confidence: 0.60
+      - name: "Rate-Sensitive Financials"
+        tickers: ["HDFCBANK", "ICICIBANK", "AXISBANK"]
+        view_bps: -100
+        confidence: 0.72
+      - name: "Auto & Mobility"
+        tickers: ["MARUTI"]
+        view_bps: 0
+        confidence: 0.50
+      - name: "NBFC"
+        tickers: ["BAJFINANCE"]
+        view_bps: 60
+        confidence: 0.65
